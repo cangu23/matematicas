@@ -63,7 +63,7 @@
         <div id="quiz-screen" class="hidden flex-col h-full">
             <div id="level-header" class="bg-indigo-600 p-6 text-white transition-colors duration-500 rounded-t-xl">
                 <div class="flex justify-between items-center mb-2">
-                    <div class="bg-black/20 px-4 py-1 rounded-full font-black tracking-wider text-sm">MUNDO <span id="current-q-num">1</span>/9</div>
+                    <div class="bg-black/20 px-4 py-1 rounded-full font-black tracking-wider text-sm">MUNDO <span id="current-q-num">1</span>/<span id="total-q-num">9</span></div>
                     <div class="text-xl font-black bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full shadow-inner border-2 border-yellow-500">⭐ <span id="score-display">0</span></div>
                 </div>
                 <div class="text-center my-4">
@@ -91,15 +91,31 @@
         <!-- PANTALLA DE RESULTADOS -->
         <div id="result-screen" class="hidden p-8 text-center bg-gradient-to-b from-yellow-300 to-orange-400 h-full rounded-[1.5rem] border-8 border-white">
             <div id="result-icon" class="text-8xl mb-4 drop-shadow-lg bounce-hero">🏆</div>
-            <h2 id="result-title" class="game-font text-5xl font-black text-orange-900 mb-2 drop-shadow-md uppercase">¡MISIÓN<br>CUMPLIDA!</h2>
-            <div class="bg-white/30 rounded-3xl p-6 my-8 shadow-inner border-4 border-white/40">
+            <h2 id="result-title" class="game-font text-4xl md:text-5xl font-black text-orange-900 mb-2 drop-shadow-md uppercase">¡MISIÓN<br>TERMINADA!</h2>
+            
+            <div class="bg-white/30 rounded-3xl p-6 mt-6 mb-4 shadow-inner border-4 border-white/40">
                 <p class="text-xl text-orange-900 font-bold mb-2">Puntuación Final</p>
-                <div class="text-7xl font-black text-white drop-shadow-lg"><span id="final-score">0</span><span class="text-4xl">/9</span></div>
+                <div class="text-7xl font-black text-white drop-shadow-lg"><span id="final-score">0</span><span id="final-total" class="text-4xl">/9</span></div>
             </div>
-            <p id="result-message" class="text-2xl text-orange-900 mb-8 font-black bg-white/50 py-3 px-6 rounded-2xl"></p>
-            <button onclick="resetQuiz()" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-full text-xl shadow-xl w-full uppercase tracking-wider">
-                <i class="fas fa-redo mr-2"></i> Jugar nueva partida
-            </button>
+            
+            <!-- SECCIÓN DE ERRORES A REFORZAR -->
+            <div id="mistakes-section" class="hidden bg-white/40 rounded-3xl p-6 mb-6 shadow-inner border-4 border-white/50 text-left">
+                <h3 class="text-xl text-red-700 font-black mb-3"><i class="fas fa-tools"></i> Misiones a Reforzar:</h3>
+                <ul id="mistakes-list" class="list-disc pl-6 text-red-900 font-bold space-y-2 text-lg">
+                    <!-- Los errores se listan aquí -->
+                </ul>
+            </div>
+
+            <p id="result-message" class="text-xl md:text-2xl text-orange-900 mb-8 font-black bg-white/50 py-3 px-6 rounded-2xl"></p>
+            
+            <div class="flex flex-col gap-4 justify-center">
+                <button id="btn-review" onclick="startReview()" class="hidden btn-game bg-red-500 hover:bg-red-400 text-white font-black py-4 px-8 rounded-full text-xl shadow-xl uppercase tracking-wider w-full">
+                    <i class="fas fa-dumbbell mr-2"></i> Repasar Errores
+                </button>
+                <button onclick="resetQuiz()" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-full text-xl shadow-xl w-full uppercase tracking-wider">
+                    <i class="fas fa-home mr-2"></i> Volver al Inicio
+                </button>
+            </div>
         </div>
     </div>
 
@@ -113,10 +129,8 @@
         // SISTEMA DE GENERACIÓN DINÁMICA (ANTI-TRAMPAS)
         // ==========================================
         
-        // Utilidades matemáticas
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         
-        // Mezclador de opciones (asegura que la correcta esté en diferente lugar cada vez)
         function shuffleOptions(correctAnswer, distractors) {
             let opts = [correctAnswer, ...distractors];
             for (let i = opts.length - 1; i > 0; i--) {
@@ -126,25 +140,26 @@
             return { options: opts, correctIndex: opts.indexOf(correctAnswer) };
         }
 
-        let questions = []; // Se llenará dinámicamente cada vez que se inicie
+        let questions = []; 
+        let incorrectQuestions = []; // Array para guardar las preguntas que falló
 
         function generateQuestions() {
             questions = []; // Limpiar
 
             // 1. Propiedades de Multiplicación
             const props = [
-                { nombre: "Propiedad Conmutativa", formula: (a,b,c) => `${a} x ${b} = ${b} x ${a}`, exp: "El orden de los números no altera el resultado." },
-                { nombre: "Propiedad Asociativa", formula: (a,b,c) => `(${a} x ${b}) x ${c} = ${a} x (${b} x ${c})`, exp: "No importa cómo agrupes entre paréntesis, el resultado es el mismo." },
-                { nombre: "Propiedad Distributiva", formula: (a,b,c) => `${a} x (${b} + ${c}) = (${a} x ${b}) + (${a} x ${c})`, exp: "El número de afuera se reparte y multiplica a cada uno de los de adentro." }
+                { nombre: "Propiedad Conmutativa", formula: (a,b,c) => `${a} x ${b} = ${b} x ${a}`, exp: "Truco para identificarla: Son los mismos números, pero están al revés o cambiaron de lugar. El orden no altera el resultado." },
+                { nombre: "Propiedad Asociativa", formula: (a,b,c) => `(${a} x ${b}) x ${c} = ${a} x (${b} x ${c})`, exp: "Truco para identificarla: Fíjate en los paréntesis. Los números están en el mismo orden de ambos lados, pero los paréntesis agrupan a números diferentes." },
+                { nombre: "Propiedad Distributiva", formula: (a,b,c) => `${a} x (${b} + ${c}) = (${a} x ${b}) + (${a} x ${c})`, exp: "Truco para identificarla: Un número está fuera del paréntesis y luego se 'reparte', multiplicando a cada uno de los números que estaban adentro." }
             ];
             let p = props[rand(0,2)];
             let a1 = rand(2,7), b1 = rand(2,7), c1 = rand(2,7);
             let opt1 = shuffleOptions(p.nombre, props.filter(x => x.nombre !== p.nombre).map(x=>x.nombre).concat(["Propiedad Clausurativa"]));
             
             questions.push({
-                topic: "Multiplicación Mágica", icon: "🪄", color: "from-blue-500 to-indigo-600",
-                question: `¡Un hechizo! ¿Qué propiedad se está usando aquí?\n\n ${p.formula(a1,b1,c1)}`,
-                options: opt1.options, correct: opt1.correctIndex, explanation: `¡Magia pura! Es la ${p.nombre}. ${p.exp}`
+                topic: "Detective de Multiplicación", icon: "🔍", color: "from-blue-500 to-indigo-600",
+                question: `Analiza esta operación: ¿Qué propiedad de la multiplicación se está aplicando aquí?\n\n ${p.formula(a1,b1,c1)}`,
+                options: opt1.options, correct: opt1.correctIndex, explanation: `Es la ${p.nombre}. ${p.exp}`
             });
 
             // 2. División
@@ -156,8 +171,8 @@
             
             questions.push({
                 topic: "Misterio de la División", icon: "🕵️‍♂️", color: "from-emerald-500 to-teal-600",
-                question: `Resuelve el misterio: Si repartimos en ${div_d} partes, a cada uno le tocan ${div_c} y sobran ${div_r}. ¿Cuánto teníamos al principio (Dividendo)?`,
-                options: opt2.options, correct: opt2.correctIndex, explanation: `Fórmula secreta: (Divisor x Cociente) + Residuo. Es decir: (${div_d} x ${div_c}) + ${div_r} = ${dividendo}.`
+                question: `Si repartimos una cantidad en ${div_d} partes (divisor), a cada uno le tocan ${div_c} (cociente) y sobran ${div_r} (residuo). ¿Cuánto teníamos al principio (Dividendo)?`,
+                options: opt2.options, correct: opt2.correctIndex, explanation: `Regla para comprobar: (Divisor x Cociente) + Residuo. Multiplicas lo que repartiste (${div_d} x ${div_c} = ${div_d * div_c}) y sumas lo que sobró (+${div_r}) = ${dividendo}.`
             });
 
             // 3. Semirrecta
@@ -166,9 +181,9 @@
             let opt3 = shuffleOptions(`${num3}/${den3}`, [`${den3}/${num3}`, `${num3+1}/${den3}`, `${num3}/${den3+1}`]);
 
             questions.push({
-                topic: "Saltos de Canguro", icon: "🦘", color: "from-orange-500 to-red-500",
-                question: `En una pista, divides el camino en ${den3} partes iguales. Si das ${num3} saltos de canguro desde el inicio, ¿en qué fracción aterrizas?`,
-                options: opt3.options, correct: opt3.correctIndex, explanation: `¡Boing! Las partes en que se divide es el número de abajo (${den3}) y los saltos que das es el de arriba (${num3}).`
+                topic: "Saltos en la Recta", icon: "📏", color: "from-orange-500 to-red-500",
+                question: `En una semirrecta numérica, divides el espacio entre el 0 y el 1 en ${den3} partes iguales. Si das ${num3} saltos desde el 0, ¿en qué fracción te ubicas?`,
+                options: opt3.options, correct: opt3.correctIndex, explanation: `Para identificarlo: El número de ABAJO (denominador) son las partes en las que se divide (${den3}). El número de ARRIBA (numerador) son los saltos que das (${num3}).`
             });
 
             // 4. Orden Fracciones
@@ -178,12 +193,12 @@
             do { f2 = fracs[rand(0, fracs.length-1)]; } while (f1 === f2);
             let mayor = f1.val > f2.val ? f1 : f2;
             let menor = f1.val < f2.val ? f1 : f2;
-            let opt4 = shuffleOptions(`El monstruo ${mayor.text}`, [`El monstruo ${menor.text}`, "Son iguales", "No se puede saber"]);
+            let opt4 = shuffleOptions(`La fracción ${mayor.text}`, [`La fracción ${menor.text}`, "Son iguales", "No se puede saber"]);
 
             questions.push({
                 topic: "Batalla de Fracciones", icon: "⚔️", color: "from-purple-500 to-pink-600",
-                question: `¡Duelo de titanes! ¿Cuál de estas fracciones es el monstruo MÁS GRANDE: ${f1.text} o ${f2.text}?`,
-                options: opt4.options, correct: opt4.correctIndex, explanation: `¡Ganó ${mayor.text}! Si multiplicas en cruz, descubres cuál vale más.`
+                question: `¿Cuál de estas fracciones es MAYOR: ${f1.text} o ${f2.text}?`,
+                options: opt4.options, correct: opt4.correctIndex, explanation: `¡Es mayor ${mayor.text}! Truco rápido: Multiplica en cruz (el de arriba de una, por el de abajo de la otra). El lado que dé el número más grande, es la fracción mayor.`
             });
 
             // 5. Primos
@@ -191,62 +206,62 @@
             const compuestos = [9, 15, 21, 25, 27, 33];
             let primoElegido = primos[rand(0, primos.length-1)];
             let comp1 = compuestos[rand(0, 1)], comp2 = compuestos[rand(2, 3)], comp3 = compuestos[rand(4, 5)];
-            let opt5 = shuffleOptions(`El Agente ${primoElegido}`, [`El Agente ${comp1}`, `El Agente ${comp2}`, `El Agente ${comp3}`]);
+            let opt5 = shuffleOptions(`El número ${primoElegido}`, [`El número ${comp1}`, `El número ${comp2}`, `El número ${comp3}`]);
 
             questions.push({
-                topic: "Primos Secretos", icon: "🤫", color: "from-slate-700 to-slate-900",
-                question: `Los números primos son agentes que solo se dividen para 1 y para sí mismos. ¿Quién es el agente primo aquí?`,
-                options: opt5.options, correct: opt5.correctIndex, explanation: `¡Agente ${primoElegido} descubierto! Los demás números aparecen en otras tablas de multiplicar.`
+                topic: "Números Primos", icon: "🤫", color: "from-slate-700 to-slate-900",
+                question: `Recuerda que los números primos solo se pueden dividir para 1 y para sí mismos. ¿Cuál de estos es un número primo?`,
+                options: opt5.options, correct: opt5.correctIndex, explanation: `Es el ${primoElegido}. Truco para identificarlos: Los números primos NO aparecen como respuesta en ninguna otra tabla de multiplicar. Los otros números sí están en la tabla del 3 o del 5.`
             });
 
             // 6. Conversión
             let opt6 = shuffleOptions("Multiplicar por 10,000", ["Dividir para 100", "Multiplicar por 100", "Dividir para 10,000"]);
             questions.push({
-                topic: "La Escalera Gigante", icon: "🪜", color: "from-cyan-500 to-blue-600",
-                question: `Estás en el escalón de metros cuadrados (m²) y quieres BAJAR 2 escalones a centímetros cuadrados (cm²). ¿Qué debes hacer con tu número?`,
-                options: opt6.options, correct: opt6.correctIndex, explanation: `¡Bajaste rapidísimo! Al bajar multiplicas. Como bajaste 2 escalones y son cuadrados, es x100 y otra vez x100 (10,000).`
+                topic: "La Escalera de Medidas", icon: "🪜", color: "from-cyan-500 to-blue-600",
+                question: `Estás en el escalón de metros cuadrados (m²) y quieres BAJAR 2 escalones a centímetros cuadrados (cm²). ¿Qué operación debes hacer?`,
+                options: opt6.options, correct: opt6.correctIndex, explanation: `Regla de la escalera: Bajar es Multiplicar. Subir es Dividir. Como bajaste 2 escalones, y es al cuadrado (x100), debes multiplicar por 100 y otra vez por 100 (eso es 10,000).`
             });
 
             // 7. MCM/MCD
             const pares = [{a:4, b:6, mcm:12, mcd:2}, {a:6, b:8, mcm:24, mcd:2}, {a:3, b:9, mcm:9, mcd:3}, {a:10, b:15, mcm:30, mcd:5}];
             let parElegido = pares[rand(0, pares.length-1)];
             let esMCM = rand(0,1) === 0;
-            let preguntaM = esMCM ? `el Mínimo Común Múltiplo (MCM)` : `el Máximo Común Divisor (MCD)`;
+            let preguntaM = esMCM ? `el Mínimo Común Múltiplo (m.c.m.)` : `el Máximo Común Divisor (M.C.D.)`;
             let respM = esMCM ? parElegido.mcm : parElegido.mcd;
-            let opt7 = shuffleOptions(`El número ${respM}`, [`El número ${respM + 2}`, `El número ${parElegido.a * parElegido.b}`, `El número ${respM - 1 > 0 ? respM - 1 : 4}`]);
+            let opt7 = shuffleOptions(`Es el ${respM}`, [`Es el ${respM + 2}`, `Es el ${parElegido.a * parElegido.b}`, `Es el ${respM - 1 > 0 ? respM - 1 : 4}`]);
 
             questions.push({
-                topic: "Los Gemelos M", icon: "👯‍♂️", color: "from-rose-500 to-pink-500",
-                question: `Misión: Encuentra ${preguntaM} de los números ${parElegido.a} y ${parElegido.b}.`,
-                options: opt7.options, correct: opt7.correctIndex, explanation: esMCM ? `El MCM es el múltiplo más pequeño que comparten en sus tablas.` : `El MCD es el número más grande que divide a ambos de forma exacta.`
+                topic: "Múltiplos y Divisores", icon: "🧮", color: "from-rose-500 to-pink-500",
+                question: `Encuentra ${preguntaM} de los números ${parElegido.a} y ${parElegido.b}.`,
+                options: opt7.options, correct: opt7.correctIndex, explanation: esMCM ? `Para el m.c.m. haces las tablas de multiplicar de ambos y buscas el PRIMER número donde coinciden.` : `Para el M.C.D. buscas el número MÁS GRANDE para el cual se pueden dividir ambos de forma exacta.`
             });
 
             // 8. Suma Resta Fracciones
             const sumas = [
-                {q: "1/2 + 1/4", ans: "3/4", exp:"Al cortar el 1/2 salen 2/4. Sumas 2/4 + 1/4 = 3/4."},
-                {q: "1/2 + 1/3", ans: "5/6", exp:"Buscas el MCM (6). 1/2 es 3/6, y 1/3 es 2/6. Sumas: 5/6."},
-                {q: "3/4 - 1/2", ans: "1/4", exp:"Al 3/4 le quitas 2/4 (que es lo mismo que 1/2). Te queda 1/4."},
-                {q: "2/3 - 1/3", ans: "1/3", exp:"Como el número de abajo es igual, solo restas los de arriba: 2 - 1 = 1."}
+                {q: "1/2 + 1/4", ans: "3/4", exp:"Paso 1: Buscas el mcm (4). Paso 2: Conviertes 1/2 en 2/4. Paso 3: Sumas 2/4 + 1/4 = 3/4."},
+                {q: "1/2 + 1/3", ans: "5/6", exp:"Paso 1: mcm de 2 y 3 es 6. Paso 2: 1/2 es 3/6, y 1/3 es 2/6. Paso 3: Sumas = 5/6."},
+                {q: "3/4 - 1/2", ans: "1/4", exp:"Conviertes el 1/2 a 2/4 para que tengan el mismo denominador. Luego restas 3/4 menos 2/4 = 1/4."},
+                {q: "2/3 - 1/3", ans: "1/3", exp:"Como el denominador (abajo) es igual en las dos, lo mantienes (3) y solo restas los números de arriba: 2 - 1 = 1."}
             ];
             let sumaElegida = sumas[rand(0, sumas.length-1)];
-            let opt8 = shuffleOptions(`${sumaElegida.ans} de pizza`, ["2/6 de pizza", "4/5 de pizza", "1/6 de pizza"]);
+            let opt8 = shuffleOptions(`El resultado es ${sumaElegida.ans}`, ["El resultado es 2/6", "El resultado es 4/5", "El resultado es 1/6"]);
 
             questions.push({
-                topic: "Pizzas Matemáticas", icon: "🍕", color: "from-amber-500 to-orange-500",
-                question: `Tienes hambre y debes resolver esto: ¿Cuánto es ${sumaElegida.q}?`,
-                options: opt8.options, correct: opt8.correctIndex, explanation: `¡Chef matemático! ${sumaElegida.exp}`
+                topic: "Suma y Resta de Fracciones", icon: "➕", color: "from-amber-500 to-orange-500",
+                question: `Resuelve esta operación con fracciones: ¿Cuánto es ${sumaElegida.q}?`,
+                options: opt8.options, correct: opt8.correctIndex, explanation: `${sumaElegida.exp}`
             });
 
             // 9. Barras
             const temasBarras = ["Helado", "Fútbol", "Perros", "Color Azul", "Robots"];
             let temaBarra = temasBarras[rand(0, temasBarras.length-1)];
             let numBarra = rand(5, 15);
-            let opt9 = shuffleOptions(`Hasta el ${numBarra}`, ["Hasta el 1", "Depende del ancho", `Hasta el ${numBarra + 3}`]);
+            let opt9 = shuffleOptions(`Hasta el ${numBarra}`, ["Hasta el 1", "Depende del ancho de la barra", `Hasta el ${numBarra + 3}`]);
 
             questions.push({
-                topic: "Torre de Bloques", icon: "📊", color: "from-lime-500 to-green-600",
-                question: `En una encuesta, ${numBarra} niños votaron por '${temaBarra}'. Al armar tu diagrama de barras, ¿Hasta qué número de altura debe subir?`,
-                options: opt9.options, correct: opt9.correctIndex, explanation: `¡Construcción perfecta! La altura de la barra SIEMPRE marca el número exacto de votos (${numBarra}).`
+                topic: "Diagrama de Barras", icon: "📊", color: "from-lime-500 to-green-600",
+                question: `En una tabla de frecuencias, ${numBarra} personas eligieron '${temaBarra}'. Al dibujar el diagrama de barras, ¿Hasta qué número de altura debe subir esa barra?`,
+                options: opt9.options, correct: opt9.correctIndex, explanation: `Regla del diagrama: La altura de la barra SIEMPRE debe marcar exactamente el mismo número de la frecuencia absoluta (los votos), en este caso ${numBarra}.`
             });
         }
 
@@ -268,6 +283,7 @@
         const scoreDisplay = document.getElementById('score-display');
         const progressContainer = document.getElementById('progress-dots-container');
         const currentQNum = document.getElementById('current-q-num');
+        const totalQNum = document.getElementById('total-q-num');
         const questionText = document.getElementById('question-text');
         const questionCard = document.getElementById('question-card');
         const optionsContainer = document.getElementById('options-container');
@@ -303,11 +319,33 @@
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700', '#FF6347', '#4169E1', '#32CD32', '#FF69B4'] });
         }
 
+        // Inicia una partida nueva desde cero
         function startQuiz() {
-            generateQuestions(); // ¡La magia ocurre aquí! Genera nuevas preguntas.
+            generateQuestions(); 
+            incorrectQuestions = []; // Limpiar historial de errores
+            startQuizUI();
+        }
+
+        // Inicia una partida SOLO con las preguntas que falló
+        function startReview() {
+            questions = [...incorrectQuestions]; // Copiar los errores como nuevas preguntas
+            incorrectQuestions = []; // Limpiar para esta nueva ronda
+            startQuizUI();
+        }
+
+        // Configura la interfaz para empezar las preguntas
+        function startQuizUI() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreDisplay.innerText = score;
             startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
             quizScreen.classList.add('flex');
+            
+            // Actualizar total de preguntas en la UI (puede ser 9 o menos si está en repaso)
+            totalQNum.innerText = questions.length;
+            
             initProgressDots();
             loadQuestion();
         }
@@ -329,9 +367,11 @@
 
             for(let i=0; i<questions.length; i++) {
                 const dot = document.getElementById(`dot-${i}`);
-                dot.className = 'progress-dot relative';
-                if(i < currentQuestionIndex) dot.classList.add('done');
-                if(i === currentQuestionIndex) dot.classList.add('active');
+                if(dot) {
+                    dot.className = 'progress-dot relative';
+                    if(i < currentQuestionIndex) dot.classList.add('done');
+                    if(i === currentQuestionIndex) dot.classList.add('active');
+                }
             }
 
             q.options.forEach((opt, index) => {
@@ -351,6 +391,11 @@
             const q = questions[currentQuestionIndex];
             const allBtns = optionsContainer.children;
             const isCorrect = selectedIndex === q.correct;
+
+            // Si se equivoca, guardar la pregunta para el repaso
+            if (!isCorrect) {
+                incorrectQuestions.push(q);
+            }
 
             Array.from(allBtns).forEach((b, idx) => {
                 b.disabled = true;
@@ -414,29 +459,51 @@
             setTimeout(triggerConfetti, 1000);
             
             document.getElementById('final-score').innerText = score;
+            document.getElementById('final-total').innerText = '/' + questions.length;
+            
             const messageEl = document.getElementById('result-message');
             const iconEl = document.getElementById('result-icon');
+            
+            // Lógica para mostrar los errores y el botón de repasar
+            const mistakesSection = document.getElementById('mistakes-section');
+            const mistakesList = document.getElementById('mistakes-list');
+            const btnReview = document.getElementById('btn-review');
 
-            if (score === 9) {
+            if (incorrectQuestions.length > 0) {
+                mistakesSection.classList.remove('hidden');
+                btnReview.classList.remove('hidden');
+                mistakesList.innerHTML = '';
+                
+                incorrectQuestions.forEach(q => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `${q.icon} ${q.topic}`;
+                    mistakesList.appendChild(li);
+                });
+            } else {
+                mistakesSection.classList.add('hidden');
+                btnReview.classList.add('hidden');
+            }
+
+            // Mensajes basados en el porcentaje de aciertos
+            let ratio = score / questions.length;
+
+            if (ratio === 1) {
                 iconEl.innerText = '👑';
-                messageEl.innerText = "¡ERES UNA LEYENDA MATEMÁTICA! Tu cerebro es nivel Einstein.";
-            } else if (score >= 7) {
+                messageEl.innerText = "¡PERFECTO! Tu cerebro es nivel Einstein.";
+            } else if (ratio >= 0.7) {
                 iconEl.innerText = '🚀';
-                messageEl.innerText = "¡SÚPER BIEN! Estás listísimo para destruir ese examen.";
-            } else if (score >= 5) {
+                messageEl.innerText = "¡SÚPER BIEN! Solo necesitas pulir un par de detalles.";
+            } else if (ratio >= 0.5) {
                 iconEl.innerText = '🛡️';
-                messageEl.innerText = "¡BUEN TRABAJO! Ya casi dominas todos los poderes matemáticos.";
+                messageEl.innerText = "¡BUEN TRABAJO! Usa el botón rojo para entrenar los temas que fallaste.";
             } else {
                 iconEl.innerText = '🔋';
-                messageEl.innerText = "¡HAY QUE RECARGAR ENERGÍA! Juega otra vez para volverte más fuerte.";
+                messageEl.innerText = "¡A SEGUIR ENTRENANDO! Repasa tus errores para volverte más fuerte.";
             }
         }
 
+        // Vuelve a la pantalla principal de inicio
         function resetQuiz() {
-            currentQuestionIndex = 0;
-            score = 0;
-            scoreDisplay.innerText = score;
-            
             nextBtn.innerHTML = 'Siguiente Nivel <i class="fas fa-forward ml-2"></i>';
             nextBtn.className = 'hidden btn-game w-full md:w-2/3 bg-blue-500 hover:bg-blue-400 text-white font-black py-4 px-8 rounded-full text-xl tracking-wider uppercase';
 
