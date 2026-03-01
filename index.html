@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventura Matemática - 6to Año</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Librería para Confeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #87CEEB; /* Cielo azul */
+            background-image: radial-gradient(#ffffff 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+        h1, h2, .game-font { font-family: 'Fredoka', sans-serif; }
+        
+        /* Estilo de botones tipo videojuego */
+        .btn-game {
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        .btn-game:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        .option-btn { transition: all 0.2s ease-in-out; }
+        .option-btn:disabled { cursor: not-allowed; }
+        
+        /* Animaciones */
+        .bounce-hero { animation: bounceHero 2s infinite; }
+        @keyframes bounceHero {
+            0%, 100% { transform: translateY(-10px); }
+            50% { transform: translateY(10px); }
+        }
+        
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        /* Camino de progreso */
+        .progress-dot {
+            width: 15px; height: 15px; border-radius: 50%;
+            background-color: white; border: 3px solid rgba(255,255,255,0.5);
+            transition: all 0.3s;
+        }
+        .progress-dot.active { background-color: #FBBF24; border-color: #FFF; transform: scale(1.3); box-shadow: 0 0 10px #FBBF24;}
+        .progress-dot.done { background-color: #4ADE80; border-color: #FFF; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contenedor Principal -->
+    <div class="max-w-2xl w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden border-8 border-white">
+        
+        <!-- PANTALLA DE INICIO -->
+        <div id="start-screen" class="p-8 text-center bg-gradient-to-b from-indigo-500 to-purple-600 text-white h-full rounded-[1.5rem]">
+            <div class="text-8xl mb-4 bounce-hero">🎮🧑‍🚀</div>
+            <h1 class="text-5xl md:text-6xl font-black mb-4 drop-shadow-lg text-yellow-300 tracking-wide leading-tight">
+                Misión<br>Matemática
+            </h1>
+            <p class="text-xl md:text-2xl font-bold mb-8 text-purple-100">¡Conviértete en el héroe del 6to año!</p>
+            
+            <div class="bg-white/20 rounded-2xl p-4 mb-8 text-left inline-block">
+                <p class="font-bold text-lg mb-2"><i class="fas fa-map-marked-alt text-yellow-300"></i> Tu misión hoy:</p>
+                <ul class="text-sm space-y-2 font-semibold">
+                    <li>✨ Superar 9 mundos diferentes.</li>
+                    <li>🧠 Usar tus superpoderes mentales.</li>
+                    <li>🏆 Conseguir la copa de oro.</li>
+                </ul>
+            </div><br>
+
+            <button onclick="startQuiz()" class="btn-game bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-black py-4 px-10 rounded-full text-2xl w-full md:w-auto uppercase tracking-wider">
+                ¡JUGAR AHORA! <i class="fas fa-gamepad ml-2"></i>
+            </button>
+        </div>
+
+        <!-- PANTALLA DEL QUIZ -->
+        <div id="quiz-screen" class="hidden flex-col h-full">
+            
+            <!-- Header Animado del Nivel -->
+            <div id="level-header" class="bg-indigo-600 p-6 text-white transition-colors duration-500 rounded-t-xl">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="bg-black/20 px-4 py-1 rounded-full font-black tracking-wider text-sm">
+                        MUNDO <span id="current-q-num">1</span>/9
+                    </div>
+                    <div class="text-xl font-black bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full shadow-inner border-2 border-yellow-500">
+                        ⭐ <span id="score-display">0</span>
+                    </div>
+                </div>
+                
+                <!-- Título del Tema muy visible -->
+                <div class="text-center my-4">
+                    <div id="topic-icon" class="text-5xl mb-2 drop-shadow-md">🪄</div>
+                    <h2 id="topic-title" class="game-font text-3xl md:text-4xl font-black text-white drop-shadow-md leading-tight">
+                        Multiplicación Mágica
+                    </h2>
+                </div>
+
+                <!-- Barra de progreso con puntitos -->
+                <div class="flex justify-between items-center mt-6 px-2" id="progress-dots-container">
+                    <!-- Los puntos se generan con JS -->
+                </div>
+            </div>
+
+            <!-- Pregunta y Opciones -->
+            <div class="p-6 md:p-8 flex-grow bg-slate-50 relative">
+                
+                <div id="question-card" class="bg-white p-6 rounded-2xl shadow-lg border-4 border-slate-100 mb-6 relative z-10">
+                    <h3 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800">¿Pregunta?</h3>
+                </div>
+
+                <div id="options-container" class="space-y-4">
+                    <!-- Las opciones se inyectan con JS -->
+                </div>
+
+                <!-- Feedback Visual Animado -->
+                <div id="feedback-container" class="mt-6 hidden p-5 rounded-2xl text-center font-bold text-lg border-4 shadow-sm animate__animated">
+                    <!-- Mensaje -->
+                </div>
+            </div>
+
+            <!-- Footer con botón Siguiente -->
+            <div class="p-4 bg-white border-t-4 border-slate-100 flex justify-center pb-6">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden btn-game w-full md:w-2/3 bg-blue-500 hover:bg-blue-400 text-white font-black py-4 px-8 rounded-full text-xl tracking-wider uppercase">
+                    Siguiente Nivel <i class="fas fa-forward ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE RESULTADOS -->
+        <div id="result-screen" class="hidden p-8 text-center bg-gradient-to-b from-yellow-300 to-orange-400 h-full rounded-[1.5rem] border-8 border-white">
+            <div id="result-icon" class="text-8xl mb-4 drop-shadow-lg bounce-hero">🏆</div>
+            <h2 id="result-title" class="game-font text-5xl font-black text-orange-900 mb-2 drop-shadow-md uppercase">¡MISIÓN<br>CUMPLIDA!</h2>
+            
+            <div class="bg-white/30 rounded-3xl p-6 my-8 shadow-inner border-4 border-white/40">
+                <p class="text-xl text-orange-900 font-bold mb-2">Puntuación Final</p>
+                <div class="text-7xl font-black text-white drop-shadow-lg">
+                    <span id="final-score">0</span><span class="text-4xl">/9</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="text-2xl text-orange-900 mb-8 font-black bg-white/50 py-3 px-6 rounded-2xl"></p>
+            
+            <button onclick="resetQuiz()" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-full text-xl shadow-xl w-full uppercase tracking-wider">
+                <i class="fas fa-redo mr-2"></i> Jugar de nuevo
+            </button>
+        </div>
+
+    </div>
+
+    <!-- AUDIO EFFECTS (Opcional, usando HTML5 Audio con URLs genéricas cortas) -->
+    <audio id="sound-correct" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <audio id="sound-wrong" src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3"></audio>
+    <audio id="sound-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
+    <script>
+        // Array de preguntas adaptado para niños (Mundos, Iconos y Colores)
+        const questions = [
+            {
+                topic: "Multiplicación Mágica", icon: "🪄", color: "from-blue-500 to-indigo-600",
+                question: "¡Un hechizo! ¿Qué propiedad usas al hacer esto: 5 x (3 + 2) = (5 x 3) + (5 x 2)?",
+                options: ["Propiedad Conmutativa", "Propiedad Asociativa", "Propiedad Distributiva", "Propiedad Clausurativa"],
+                correct: 2,
+                explanation: "¡Correcto! La propiedad distributiva REPARTE la magia: el 5 multiplica a cada número dentro del paréntesis."
+            },
+            {
+                topic: "El Misterio de la División", icon: "🕵️‍♂️", color: "from-emerald-500 to-teal-600",
+                question: "Resuelve el misterio: Si repartimos en 4 partes (divisor), a cada uno le tocan 5 (cociente) y sobran 2 (residuo). ¿Cuánto teníamos al principio (dividendo)?",
+                options: ["Teníamos 22", "Teníamos 11", "Teníamos 20", "Teníamos 18"],
+                correct: 0,
+                explanation: "¡Elemental! Multiplicas lo que repartiste (4 x 5 = 20) y le sumas lo que sobró (+2). ¡Total 22!"
+            },
+            {
+                topic: "Saltos de Canguro", icon: "🦘", color: "from-orange-500 to-red-500",
+                question: "En una pista, divides el camino en 5 partes iguales. Si das 3 saltos de canguro desde el inicio, ¿en qué fracción aterrizas?",
+                options: ["5/3", "3/5", "1/5", "3/4"],
+                correct: 1,
+                explanation: "¡Boing! Las partes de la pista son el número de abajo (5) y los saltos el de arriba (3). ¡Aterrizas en 3/5!"
+            },
+            {
+                topic: "Batalla de Fracciones", icon: "⚔️", color: "from-purple-500 to-pink-600",
+                question: "¡Duelo de titanes! ¿Cuál de estas fracciones es el monstruo MÁS GRANDE?",
+                options: ["1/4 (Un pedacito)", "1/2 (La mitad)", "3/4 (Casi entero)", "1/3 (Un tercio)"],
+                correct: 2,
+                explanation: "¡Ganó 3/4! Imagina una pizza cortada en 4. ¡Comerte 3 pedazos (3/4) es comer casi toda la pizza!"
+            },
+            {
+                topic: "Números Primos Secretos", icon: "🤫", color: "from-slate-700 to-slate-900",
+                question: "Los números primos son agentes secretos que solo se dividen para 1 y para sí mismos. ¿Quién es el agente primo aquí?",
+                options: ["El número 9", "El número 11", "El número 15", "El número 21"],
+                correct: 1,
+                explanation: "¡Agente 11 descubierto! El 9, 15 y 21 no son primos porque los puedes encontrar en la tabla del 3."
+            },
+            {
+                topic: "La Escalera Gigante", icon: "🪜", color: "from-cyan-500 to-blue-600",
+                question: "Estás en el escalón de metros cuadrados (m²) y quieres BAJAR 2 escalones a centímetros cuadrados (cm²). ¿Qué debes hacer?",
+                options: ["Dividir para 100", "Multiplicar por 100", "Multiplicar por 10,000", "Dividir para 10,000"],
+                correct: 2,
+                explanation: "¡Bajaste rapidísimo! Al bajar multiplicas. Como bajaste 2 escalones, multiplicas por 100 y otra vez por 100 (100 x 100 = 10,000)."
+            },
+            {
+                topic: "Los Gemelos MCM", icon: "👯‍♂️", color: "from-rose-500 to-pink-500",
+                question: "Misión: Encuentra el Mínimo Común Múltiplo (el número más pequeño que comparten en sus tablas) del 4 y el 6.",
+                options: ["El 2", "El 12", "El 24", "El 10"],
+                correct: 1,
+                explanation: "¡Exacto! En la tabla del 4 está el 12, y en la tabla del 6 también está el 12. ¡Es el primero en el que coinciden!"
+            },
+            {
+                topic: "Suma de Pizzas", icon: "🍕", color: "from-amber-500 to-orange-500",
+                question: "Tienes media pizza (1/2) y te regalan un cuarto de pizza (1/4). ¿Cuánta pizza tienes para comer?",
+                options: ["2/6 de pizza", "3/4 de pizza", "1/6 de pizza", "2/4 de pizza"],
+                correct: 1,
+                explanation: "¡Delicioso! Si cortas la media pizza en dos, tendrás 2/4. Sumas eso al 1/4 extra, ¡y tienes 3/4 de pizza!"
+            },
+            {
+                topic: "La Torre de Bloques", icon: "📊", color: "from-lime-500 to-green-600",
+                question: "En una encuesta, 7 niños votaron por 'Fútbol'. Al armar tu torre en el diagrama de barras, ¿Hasta qué número debe subir?",
+                options: ["Hasta el 1", "Depende de los bloques", "Hasta el 7", "Hasta el 14"],
+                correct: 2,
+                explanation: "¡Construcción perfecta! La altura de la torre siempre debe marcar exactamente la cantidad de votos, que es 7."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let canAnswer = true;
+
+        // Elementos del DOM
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const levelHeader = document.getElementById('level-header');
+        const topicIcon = document.getElementById('topic-icon');
+        const topicTitle = document.getElementById('topic-title');
+        const scoreDisplay = document.getElementById('score-display');
+        const progressContainer = document.getElementById('progress-dots-container');
+        const currentQNum = document.getElementById('current-q-num');
+        const questionText = document.getElementById('question-text');
+        const questionCard = document.getElementById('question-card');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const nextBtn = document.getElementById('next-btn');
+
+        // Efectos de sonido
+        const sfxCorrect = document.getElementById('sound-correct');
+        const sfxWrong = document.getElementById('sound-wrong');
+        const sfxWin = document.getElementById('sound-win');
+
+        // Inicializar puntitos de progreso
+        function initProgressDots() {
+            progressContainer.innerHTML = '';
+            for(let i=0; i<questions.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot relative';
+                dot.id = `dot-${i}`;
+                
+                // Añadir una línea conectora si no es el último
+                if(i < questions.length - 1) {
+                    const line = document.createElement('div');
+                    line.className = 'absolute top-1/2 left-full w-full h-1 bg-white/30 -z-10 -translate-y-1/2';
+                    line.style.width = 'calc(100% + 20px)'; // Aproximado
+                    dot.appendChild(line);
+                }
+                progressContainer.appendChild(dot);
+            }
+        }
+
+        function playSound(sound) {
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log("Sonido bloqueado por el navegador, no hay problema."));
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#FFD700', '#FF6347', '#4169E1', '#32CD32', '#FF69B4']
+            });
+        }
+
+        function startQuiz() {
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            quizScreen.classList.add('flex');
+            initProgressDots();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            canAnswer = true;
+            feedbackContainer.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+            questionCard.classList.remove('shake');
+            
+            const q = questions[currentQuestionIndex];
+            
+            // Actualizar UI
+            topicIcon.innerText = q.icon;
+            topicTitle.innerText = q.topic;
+            currentQNum.innerText = currentQuestionIndex + 1;
+            questionText.innerText = q.question;
+            
+            // Cambiar color de fondo del header
+            levelHeader.className = `p-6 text-white transition-colors duration-500 rounded-b-3xl shadow-md bg-gradient-to-r ${q.color}`;
+
+            // Actualizar puntitos
+            for(let i=0; i<questions.length; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                dot.className = 'progress-dot relative';
+                if(i < currentQuestionIndex) dot.classList.add('done');
+                if(i === currentQuestionIndex) dot.classList.add('active');
+            }
+
+            // Crear opciones (estilo botones grandes)
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-game option-btn w-full text-left p-5 rounded-2xl bg-white border-4 border-slate-200 hover:border-blue-400 hover:bg-blue-50 font-bold text-slate-700 text-lg md:text-xl flex items-center';
+                
+                // Letras A, B, C, D coloridas
+                const colors = ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-yellow-400'];
+                btn.innerHTML = `
+                    <span class="${colors[index]} text-white w-10 h-10 flex items-center justify-center rounded-xl mr-4 font-black shadow-sm shrink-0 border-2 border-white">
+                        ${String.fromCharCode(65 + index)}
+                    </span> 
+                    <span>${opt}</span>
+                `;
+                btn.onclick = () => selectOption(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, btnElement) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            const q = questions[currentQuestionIndex];
+            const allBtns = optionsContainer.children;
+            const isCorrect = selectedIndex === q.correct;
+
+            // Mostrar resultado en los botones
+            Array.from(allBtns).forEach((b, idx) => {
+                b.disabled = true;
+                b.classList.remove('hover:border-blue-400', 'hover:bg-blue-50', 'btn-game');
+                
+                if (idx === q.correct) {
+                    b.classList.add('bg-green-100', 'border-green-500', 'text-green-900');
+                    b.children[0].classList.replace('border-white', 'border-green-500');
+                } else if (idx === selectedIndex && !isCorrect) {
+                    b.classList.add('bg-red-100', 'border-red-500', 'text-red-900');
+                    b.children[0].classList.replace('border-white', 'border-red-500');
+                } else {
+                    b.classList.add('opacity-40');
+                }
+            });
+
+            // Feedback y Puntaje
+            feedbackContainer.classList.remove('hidden');
+            if (isCorrect) {
+                score++;
+                scoreDisplay.innerText = score;
+                playSound(sfxCorrect);
+                triggerConfetti();
+                
+                const winWords = ["¡Súper!", "¡Excelente!", "¡Genial!", "¡Poder Mental!"];
+                const randomWord = winWords[Math.floor(Math.random() * winWords.length)];
+                
+                feedbackContainer.innerHTML = `<div class="text-3xl mb-1">⭐</div><div class="text-2xl mb-1 uppercase tracking-wider">${randomWord}</div><span class="text-base font-semibold block mt-2 text-green-900 bg-white/50 p-2 rounded-xl">${q.explanation}</span>`;
+                feedbackContainer.className = 'mt-6 p-5 rounded-2xl text-center font-black border-4 shadow-sm bg-green-400 text-white border-green-500';
+            } else {
+                playSound(sfxWrong);
+                questionCard.classList.add('shake');
+                
+                feedbackContainer.innerHTML = `<div class="text-3xl mb-1">😅</div><div class="text-2xl mb-1 uppercase tracking-wider">¡Casi lo tienes!</div><span class="text-base font-semibold block mt-2 text-red-900 bg-white/50 p-2 rounded-xl"><strong>La respuesta era la ${String.fromCharCode(65 + q.correct)}.</strong><br>${q.explanation}</span>`;
+                feedbackContainer.className = 'mt-6 p-5 rounded-2xl text-center font-black border-4 shadow-sm bg-red-400 text-white border-red-500';
+            }
+
+            nextBtn.classList.remove('hidden');
+            
+            if (currentQuestionIndex === questions.length - 1) {
+                nextBtn.innerHTML = '¡Ver mi Trofeo! <i class="fas fa-trophy ml-2"></i>';
+                nextBtn.classList.replace('bg-blue-500', 'bg-yellow-500');
+                nextBtn.classList.replace('hover:bg-blue-400', 'hover:bg-yellow-400');
+                nextBtn.classList.add('text-yellow-900');
+                nextBtn.classList.remove('text-white');
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            quizScreen.classList.remove('flex');
+            resultScreen.classList.remove('hidden');
+            
+            playSound(sfxWin);
+            triggerConfetti();
+            setTimeout(triggerConfetti, 1000); // Doble confeti al final
+            
+            document.getElementById('final-score').innerText = score;
+            const messageEl = document.getElementById('result-message');
+            const iconEl = document.getElementById('result-icon');
+
+            if (score === 9) {
+                iconEl.innerText = '👑';
+                messageEl.innerText = "¡ERES UNA LEYENDA MATEMÁTICA! Tu cerebro es nivel Einstein.";
+            } else if (score >= 7) {
+                iconEl.innerText = '🚀';
+                messageEl.innerText = "¡SÚPER BIEN! Estás listísimo para destruir ese examen.";
+            } else if (score >= 5) {
+                iconEl.innerText = '🛡️';
+                messageEl.innerText = "¡BUEN TRABAJO! Ya casi dominas todos los poderes matemáticos.";
+            } else {
+                iconEl.innerText = '🔋';
+                messageEl.innerText = "¡HAY QUE RECARGAR ENERGÍA! Juega otra vez para volverte más fuerte.";
+            }
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreDisplay.innerText = score;
+            
+            nextBtn.innerHTML = 'Siguiente Nivel <i class="fas fa-forward ml-2"></i>';
+            nextBtn.className = 'hidden btn-game w-full md:w-2/3 bg-blue-500 hover:bg-blue-400 text-white font-black py-4 px-8 rounded-full text-xl tracking-wider uppercase';
+
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
