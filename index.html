@@ -34,13 +34,13 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4 py-8">
 
-    <!-- Contenedor Principal -->
-    <div class="max-w-2xl w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden border-8 border-white flex flex-col h-[90vh] max-h-[850px]">
+    <!-- Contenedor Principal con Scroll Global -->
+    <div id="main-container" class="max-w-2xl w-full bg-white rounded-[2rem] shadow-2xl overflow-y-auto border-8 border-white flex flex-col max-h-[95vh]">
         
         <!-- PANTALLA DE INICIO -->
-        <div id="start-screen" class="p-8 text-center bg-gradient-to-b from-indigo-500 to-purple-600 text-white flex-grow flex flex-col justify-center items-center rounded-[1.5rem]">
+        <div id="start-screen" class="p-8 text-center bg-gradient-to-b from-indigo-500 to-purple-600 text-white flex-grow flex flex-col justify-center items-center rounded-[1.5rem] min-h-[80vh]">
             <div class="text-8xl mb-4 bounce-hero">🎮🧑‍🚀</div>
             <h1 class="text-5xl md:text-6xl font-black mb-2 drop-shadow-lg text-yellow-300 tracking-wide leading-tight">Misión<br>Matemática</h1>
             <p class="text-xl md:text-2xl font-bold mb-6 text-purple-100">¡El Mega Examen de 36 Niveles!</p>
@@ -60,7 +60,7 @@
         </div>
 
         <!-- PANTALLA DEL QUIZ -->
-        <div id="quiz-screen" class="hidden flex-col h-full overflow-hidden">
+        <div id="quiz-screen" class="hidden flex-col min-h-[80vh]">
             <div id="level-header" class="bg-indigo-600 p-6 text-white transition-colors duration-500 rounded-t-xl shrink-0">
                 <div class="flex justify-between items-center mb-2">
                     <div class="bg-black/20 px-4 py-1 rounded-full font-black tracking-wider text-sm">PREGUNTA <span id="current-q-num">1</span>/<span id="total-q-num">36</span></div>
@@ -76,8 +76,8 @@
                 </div>
             </div>
 
-            <!-- Área desplazable para la pregunta y opciones -->
-            <div class="p-6 md:p-8 flex-grow bg-slate-50 relative overflow-y-auto">
+            <!-- Área de la pregunta y opciones (Ahora fluye naturalmente sin overflow interno) -->
+            <div class="p-6 md:p-8 flex-grow bg-slate-50 relative">
                 <div id="question-card" class="bg-white p-6 rounded-2xl shadow-lg border-4 border-slate-100 mb-6 relative z-10 transition-transform">
                     <h3 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800">¿Pregunta?</h3>
                 </div>
@@ -107,7 +107,7 @@
         </div>
 
         <!-- PANTALLA DE RESULTADOS -->
-        <div id="result-screen" class="hidden p-8 text-center bg-gradient-to-b from-yellow-300 to-orange-400 flex-grow flex flex-col justify-center items-center rounded-[1.5rem] overflow-y-auto">
+        <div id="result-screen" class="hidden p-8 text-center bg-gradient-to-b from-yellow-300 to-orange-400 flex flex-col justify-center items-center rounded-[1.5rem] min-h-[80vh]">
             <div id="result-icon" class="text-8xl mb-4 drop-shadow-lg bounce-hero">🏆</div>
             <h2 id="result-title" class="game-font text-4xl md:text-5xl font-black text-orange-900 mb-2 drop-shadow-md uppercase">¡MISIÓN<br>TERMINADA!</h2>
             
@@ -451,10 +451,6 @@
                     question: `¿Cómo se llama el cuadro donde anotamos los datos y la cantidad de votos ANTES de dibujar el diagrama de barras?`,
                     options: opt4.options, correct: opt4.correctIndex, explanation: `¡Se llama Tabla de Frecuencias! Ahí organizamos la "frecuencia absoluta", que es simplemente el número de veces que se repite un voto.` });
             }
-
-            // Para que no sea siempre en el mismo orden, podemos mezclar las 36 preguntas,
-            // pero agruparlas por temas ayuda a que el cerebro del niño no colapse cambiando de contexto cada 2 segundos.
-            // Las dejaremos en orden temático, que fluya como mundos de un juego.
         }
 
         // ==========================================
@@ -464,6 +460,7 @@
         let score = 0;
         let canAnswer = true;
 
+        const mainContainer = document.getElementById('main-container');
         const startScreen = document.getElementById('start-screen');
         const quizScreen = document.getElementById('quiz-screen');
         const resultScreen = document.getElementById('result-screen');
@@ -502,7 +499,6 @@
         }
 
         function updateProgressBar() {
-            // Calcula el progreso actual en porcentaje
             let progress = ((currentQuestionIndex) / questions.length) * 100;
             progressBarFill.style.width = progress + '%';
         }
@@ -538,7 +534,6 @@
             feedbackContainer.classList.add('hidden');
             nextBtn.classList.add('hidden');
             
-            // Botón bloqueado visualmente
             nextBtn.classList.replace('bg-blue-500', 'bg-slate-300');
             nextBtn.classList.replace('hover:bg-blue-400', 'bg-slate-300');
             nextBtn.classList.replace('text-white', 'text-slate-500');
@@ -581,8 +576,8 @@
                 });
             }
             
-            // Hacer scroll hacia arriba automáticamente si estamos en un dispositivo pequeño
-            document.querySelector('.overflow-y-auto').scrollTo(0,0);
+            // Regresar el scroll al principio de la tarjeta
+            mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function submitTextAnswer() {
@@ -662,10 +657,9 @@
 
             nextBtn.classList.remove('hidden');
             
-            // Desplazar suavemente hacia abajo para ver el feedback
+            // Desplazar suavemente el contenedor principal hacia abajo para asegurar que el feedback se vea
             setTimeout(() => {
-                const scrollContainer = document.querySelector('.overflow-y-auto');
-                scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+                mainContainer.scrollTo({ top: mainContainer.scrollHeight, behavior: 'smooth' });
             }, 100);
         }
 
@@ -681,6 +675,11 @@
                 nextBtn.classList.add('bg-blue-500', 'hover:bg-blue-400', 'text-white');
             }
             nextBtn.classList.add('fade-in-up');
+            
+            // Ajustar el scroll nuevamente si el botón se fue hacia abajo
+            setTimeout(() => {
+                mainContainer.scrollTo({ top: mainContainer.scrollHeight, behavior: 'smooth' });
+            }, 100);
         }
 
         function nextQuestion() {
@@ -690,9 +689,8 @@
                 currentQuestionIndex++;
                 loadQuestion();
             } else {
-                // Al terminar, la barra se llena al 100%
                 progressBarFill.style.width = '100%';
-                setTimeout(showResults, 500); // Pequeña pausa para ver la barra llena
+                setTimeout(showResults, 500);
             }
         }
 
@@ -719,7 +717,6 @@
                 btnReview.classList.remove('hidden');
                 mistakesList.innerHTML = '';
                 
-                // Agrupar errores por tema para que la lista no sea gigante (usando Set)
                 const uniqueTopics = [...new Set(incorrectQuestions.map(q => q.icon + " " + q.topic))];
                 
                 uniqueTopics.forEach(topicStr => {
@@ -747,11 +744,14 @@
                 iconEl.innerText = '🔋';
                 messageEl.innerText = "¡A SEGUIR ENTRENANDO! Usa el botón rojo para repasar los temas difíciles paso a paso.";
             }
+            
+            mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function resetQuiz() {
             resultScreen.classList.add('hidden');
             startScreen.classList.remove('hidden');
+            mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
